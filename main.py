@@ -15,7 +15,8 @@ class PaintCode:
 		self.screen = pygame.display.set_mode((width, height))
 		self.layers = []
 		self.cursors_dct = {
-			pygame.K_1: "brush"
+			pygame.K_1: ("brush", colors.GREEN),
+			pygame.K_2: ("rubber", colors.RED)
 
 		}
 		self.log = []
@@ -62,32 +63,34 @@ class PaintCode:
 					self.actions()
 
 	def actions(self):
-		if self.cursor == "brush":
+		if self.cursor[0] in ("brush", "rubber"):
 			self.create_object()
 
 	def draw_cursor(self):
-		if self.cursor == "brush":
+		if self.cursor[0] in ("brush", "rubber"):
 			pygame.mouse.set_visible(False)
-			pygame.draw.circle(self.screen, colors.RED, get_pos(), self.radius, width=2)
+			pygame.draw.circle(self.screen, self.cursor[1], get_pos(), self.radius, width=2)
 
 	def draw_object(self):
 		self.screen.fill(colors.WHITE)
 		for layer in self.layers:
-			if layer["type"] == "brush":
+			if layer["type"] in ("brush", "rubber"):
 				pygame.draw.circle(self.screen, layer["color"],
 				                   layer["position"], layer["radius"])
 
 	def create_object(self):
 		object_config = {
-			"type": self.cursor,
+			"type": self.cursor[0],
 			"color": self.current_color,
 			"position": get_pos()
 		}
-		if self.cursor == "brush":
+
+		if self.cursor[0] in ("brush", "rubber"):
 			object_config["radius"] = self.radius
+		if self.cursor[0] == "rubber":
+			object_config["color"] = colors.WHITE
 
 		self.layers.append(object_config)
-		self.log.append({"num_layer": self.current_layer})
 
 
 if __name__ == "__main__":
