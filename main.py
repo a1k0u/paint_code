@@ -5,6 +5,8 @@ import colors
 pygame.init()
 
 
+# TODO: Surface(YT), new brush(TY), optimization, new instruments, refactoring, pygame+tkinter??
+
 def get_pos():
 	return pygame.mouse.get_pos()
 
@@ -13,23 +15,26 @@ class PaintCode:
 	def __init__(self, width: int, height: int, caption: str):
 		pygame.display.set_caption(caption)
 		self.screen = pygame.display.set_mode((width, height))
+		self.screen.fill(colors.WHITE)
 		self.layers = []
 		self.cursors_dct = {
-			pygame.K_1: ("brush", colors.GREEN),
-			pygame.K_2: ("rubber", colors.RED)
+			pygame.K_1: ("rect", colors.RED),
 
 		}
 		self.log = []
 		self.cursor = self.cursors_dct[pygame.K_1]
 		self.radius = 25
 		self.drag = False
+		self.dragging_coordinates = (0, 0)
 		self.current_color = colors.BLACK
 		self.current_layer = 0
 
 	def loop(self):
 		while True:
-			self.handlers()
 			self.draw_object()
+			self.handlers()
+			if self.drag:
+				self.actions()
 			self.draw_cursor()
 			pygame.display.update()
 			pygame.time.Clock().tick(144)
@@ -47,6 +52,7 @@ class PaintCode:
 			if event.type == pygame.MOUSEBUTTONDOWN:
 				if event.button == 1:
 					self.drag = True
+					self.dragging_coordinates = get_pos()
 					self.actions()
 				if event.button == 4:
 					self.radius += 1
@@ -57,26 +63,39 @@ class PaintCode:
 			if event.type == pygame.MOUSEBUTTONUP:
 				if event.button == 1:
 					self.drag = False
+					self.actions()
 
 			if event.type == pygame.MOUSEMOTION:
 				if self.drag:
 					self.actions()
 
 	def actions(self):
-		if self.cursor[0] in ("brush", "rubber"):
-			self.create_object()
+		if self.cursor[0] == "rect":
+			if self.drag:
+				self.draw_figure_obj()
+			elif not self.drag:
+				self.create_object()
 
 	def draw_cursor(self):
-		if self.cursor[0] in ("brush", "rubber"):
-			pygame.mouse.set_visible(False)
-			pygame.draw.circle(self.screen, self.cursor[1], get_pos(), self.radius, width=2)
+		if self.cursor[0] == "rect":
+			pygame.mouse.set_visible(True)
+			pygame.draw.rect(self.screen, colors.RED, (get_pos()[0]+10, get_pos()[1]+25, 20, 10), width=2)
+
+	def draw_figure_obj(self):
+		if self.cursor[0] == "rect":
+			x1, y1 = self.dragging_coordinates
+			x2, y2 = get_pos()
+			pygame.draw.rect(self.screen, self.current_color,
+			                 (x1, y1, x2 - x1, y2 - y1))
 
 	def draw_object(self):
 		self.screen.fill(colors.WHITE)
 		for layer in self.layers:
-			if layer["type"] in ("brush", "rubber"):
-				pygame.draw.circle(self.screen, layer["color"],
-				                   layer["position"], layer["radius"])
+			if layer["type"] == "rect":
+				x1, y1 = layer["position"]
+				x2, y2 = layer["position_end"]
+				pygame.draw.rect(self.screen, layer["color"],
+				                 (x1, y1, x2 - x1, y2 - y1))
 
 	def create_object(self):
 		object_config = {
@@ -85,12 +104,12 @@ class PaintCode:
 			"position": get_pos()
 		}
 
-		if self.cursor[0] in ("brush", "rubber"):
-			object_config["radius"] = self.radius
-		if self.cursor[0] == "rubber":
-			object_config["color"] = colors.WHITE
+		if self.cursor[0] == "rect":
+			object_config["position"] = self.dragging_coordinates
+			object_config["position_end"] = get_pos()
 
 		self.layers.append(object_config)
+		self.log.append({"num_layer": self.current_layer})
 
 
 if __name__ == "__main__":
