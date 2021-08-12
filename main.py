@@ -26,6 +26,8 @@ class PaintCode:
 		self.radius = 25
 		self.drag = False
 		self.dragging_coordinates = (0, 0)
+		self.drag_start = (0, 0)
+		self.drag_stop = (0, 0)
 		self.current_color = colors.BLACK
 		self.current_layer = 0
 
@@ -37,7 +39,7 @@ class PaintCode:
 				self.actions()
 			self.draw_cursor()
 			pygame.display.update()
-			pygame.time.Clock().tick(144)
+			pygame.time.Clock().tick()
 
 	def handlers(self):
 		for event in pygame.event.get():
@@ -85,17 +87,26 @@ class PaintCode:
 		if self.cursor[0] == "rect":
 			x1, y1 = self.dragging_coordinates
 			x2, y2 = get_pos()
+			start_point = [x2, y2]
+			perimeter = [abs(x1 - x2), abs(y2 - y1)]
+			if x2 > x1:
+				start_point[0] = x1
+			if y2 > y1:
+				start_point[1] = y1
+			self.drag_start = start_point
+			self.drag_stop = perimeter
 			pygame.draw.rect(self.screen, self.current_color,
-			                 (x1, y1, x2 - x1, y2 - y1))
+			                 (start_point[0], start_point[1],
+			                  perimeter[0], perimeter[1]))
 
 	def draw_object(self):
 		self.screen.fill(colors.WHITE)
 		for layer in self.layers:
 			if layer["type"] == "rect":
 				x1, y1 = layer["position"]
-				x2, y2 = layer["position_end"]
+				width, height = layer["perimeter"]
 				pygame.draw.rect(self.screen, layer["color"],
-				                 (x1, y1, x2 - x1, y2 - y1))
+				                 (x1, y1, width, height))
 
 	def create_object(self):
 		object_config = {
@@ -105,8 +116,8 @@ class PaintCode:
 		}
 
 		if self.cursor[0] == "rect":
-			object_config["position"] = self.dragging_coordinates
-			object_config["position_end"] = get_pos()
+			object_config["position"] = self.drag_start
+			object_config["perimeter"] = self.drag_stop
 
 		self.layers.append(object_config)
 		self.log.append({"num_layer": self.current_layer})
