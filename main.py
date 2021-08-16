@@ -19,7 +19,8 @@ class PaintCode:
 		self.layers = []
 		self.cursors_dct = {
 			pygame.K_1: "rect",
-			pygame.K_2: "ellipse"
+			pygame.K_2: "ellipse",
+			pygame.K_3: "rubber"
 		}
 		self.log = []
 		self.cursor = self.cursors_dct[pygame.K_1]
@@ -67,6 +68,9 @@ class PaintCode:
 			elif not self.drag:
 				if self.drag_stop != (0, 0):
 					self.create_object()
+		if self.cursor == "rubber":
+			if self.drag:
+				self.delete_object()
 
 	def draw_cursor(self):
 		if self.cursor in ("rect", "ellipse"):
@@ -121,6 +125,17 @@ class PaintCode:
 
 		self.layers.append(object_config)
 		self.log.append({"num_layer": self.current_layer})
+
+	def delete_object(self):
+		for layer in range(len(self.layers)-1, -1, -1):
+			if self.layers[layer]["type"] in ("rect", "ellipse"):
+				x1, y1 = self.layers[layer]["position"]
+				width, height = self.layers[layer]["perimeter"]
+				mouse_x, mouse_y = get_pos()
+				if x1 <= mouse_x <= x1 + width and y1 <= mouse_y <= y1 + height:
+					self.layers.pop(layer)
+					self.drag = False
+					return
 
 
 if __name__ == "__main__":
