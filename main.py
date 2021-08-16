@@ -19,7 +19,7 @@ class PaintCode:
 		self.layers = []
 		self.cursors_dct = {
 			pygame.K_1: ("rect", colors.RED),
-
+			pygame.K_2: ("ellipse", colors.RED)
 		}
 		self.log = []
 		self.cursor = self.cursors_dct[pygame.K_1]
@@ -72,19 +72,23 @@ class PaintCode:
 					self.actions()
 
 	def actions(self):
-		if self.cursor[0] == "rect":
+		if self.cursor[0] in ("rect", "ellipse"):
 			if self.drag:
 				self.draw_figure_obj()
 			elif not self.drag:
 				self.create_object()
 
 	def draw_cursor(self):
-		if self.cursor[0] == "rect":
+		if self.cursor[0] in ("rect", "ellipse"):
 			pygame.mouse.set_visible(True)
-			pygame.draw.rect(self.screen, colors.RED, (get_pos()[0]+10, get_pos()[1]+25, 20, 10), width=2)
+			bd_radius = 0
+			if self.cursor[0] == "ellipse":
+				bd_radius = 100
+			pygame.draw.rect(self.screen, colors.RED, (get_pos()[0] + 10, get_pos()[1] + 25, 30, 30),
+			                 width=2, border_radius=bd_radius)
 
 	def draw_figure_obj(self):
-		if self.cursor[0] == "rect":
+		if self.cursor[0] in ("rect", "ellipse"):
 			x1, y1 = self.dragging_coordinates
 			x2, y2 = get_pos()
 			start_point = [x2, y2]
@@ -95,18 +99,27 @@ class PaintCode:
 				start_point[1] = y1
 			self.drag_start = start_point
 			self.drag_stop = perimeter
-			pygame.draw.rect(self.screen, self.current_color,
-			                 (start_point[0], start_point[1],
-			                  perimeter[0], perimeter[1]))
+			if self.cursor[0] == "rect":
+				pygame.draw.rect(self.screen, self.current_color,
+				                 (start_point[0], start_point[1],
+				                  perimeter[0], perimeter[1]))
+			else:
+				pygame.draw.ellipse(self.screen, self.current_color,
+				                    (start_point[0], start_point[1],
+				                     perimeter[0], perimeter[1]))
 
 	def draw_object(self):
 		self.screen.fill(colors.WHITE)
 		for layer in self.layers:
-			if layer["type"] == "rect":
+			if layer["type"] in ("rect", "ellipse"):
 				x1, y1 = layer["position"]
 				width, height = layer["perimeter"]
-				pygame.draw.rect(self.screen, layer["color"],
-				                 (x1, y1, width, height))
+				if layer["type"] == "rect":
+					pygame.draw.rect(self.screen, layer["color"],
+					                 (x1, y1, width, height))
+				else:
+					pygame.draw.ellipse(self.screen, layer["color"],
+					                    (x1, y1, width, height))
 
 	def create_object(self):
 		object_config = {
@@ -115,7 +128,7 @@ class PaintCode:
 			"position": get_pos()
 		}
 
-		if self.cursor[0] == "rect":
+		if self.cursor[0] in ("rect", "ellipse"):
 			object_config["position"] = self.drag_start
 			object_config["perimeter"] = self.drag_stop
 
