@@ -20,7 +20,8 @@ class PaintCode:
 		self.cursors_dct = {
 			pygame.K_1: "rect",
 			pygame.K_2: "ellipse",
-			pygame.K_3: "rubber"
+			pygame.K_3: "line",
+			pygame.K_4: "rubber"
 		}
 		self.log = []
 		self.cursor = self.cursors_dct[pygame.K_1]
@@ -28,6 +29,8 @@ class PaintCode:
 		self.dragging_coordinates = (0, 0)
 		self.drag_start = (0, 0)
 		self.drag_stop = (0, 0)
+		self.line_width = 3
+		self.clicked_coordinates = [self.dragging_coordinates]
 		self.current_color = colors.BLACK
 		self.current_layer = 0
 
@@ -62,7 +65,7 @@ class PaintCode:
 			self.actions()
 
 	def actions(self):
-		if self.cursor in ("rect", "ellipse"):
+		if self.cursor in ("rect", "ellipse", "line"):
 			if self.drag:
 				self.draw_figure_obj()
 			elif not self.drag:
@@ -78,9 +81,9 @@ class PaintCode:
 			                 width=2, border_radius=100*(self.cursor == "ellipse"))
 
 	def draw_figure_obj(self):
+		x1, y1 = self.dragging_coordinates
+		x2, y2 = get_pos()
 		if self.cursor in ("rect", "ellipse"):
-			x1, y1 = self.dragging_coordinates
-			x2, y2 = get_pos()
 			start_point = [x2, y2]
 			width_height = [abs(x1 - x2), abs(y2 - y1)]
 			if x2 > x1:
@@ -97,19 +100,26 @@ class PaintCode:
 				pygame.draw.ellipse(self.screen, self.current_color,
 				                    (start_point[0], start_point[1],
 				                     width_height[0], width_height[1]))
+		if self.cursor == "line":
+			self.drag_start = [x1, y1]
+			self.drag_stop = [x2, y2]
+			pygame.draw.line(self.screen, self.current_color, [x1, y1], [x2, y2], self.line_width)
 
 	def draw_object(self):
+		# TODO refactoring
 		self.screen.fill(colors.WHITE)
 		for layer in self.layers:
-			if layer["type"] in ("rect", "ellipse"):
+			if layer["type"] in ("rect", "ellipse", "line"):
 				x1, y1 = layer["position"]
 				width, height = layer["perimeter"]
 				if layer["type"] == "rect":
 					pygame.draw.rect(self.screen, layer["color"],
 					                 (x1, y1, width, height))
-				else:
+				elif layer["type"] == "ellipse":
 					pygame.draw.ellipse(self.screen, layer["color"],
 					                    (x1, y1, width, height))
+				elif layer["type"] == "line":
+					pygame.draw.line(self.screen, self.current_color, [x1, y1], [width, height], self.line_width)
 
 	def create_object(self):
 		object_config = {
@@ -118,7 +128,7 @@ class PaintCode:
 			"position": get_pos()
 		}
 
-		if self.cursor in ("rect", "ellipse"):
+		if self.cursor in ("rect", "ellipse", "line"):
 			object_config["position"] = self.drag_start
 			object_config["perimeter"] = self.drag_stop
 			self.drag_stop = (0, 0)
