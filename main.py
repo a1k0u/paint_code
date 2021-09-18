@@ -20,7 +20,8 @@ class PaintCode:
 			pygame.K_2: "ellipse",
 			pygame.K_3: "line",
 			pygame.K_4: "polygon",
-			pygame.K_5: "rubber"
+			pygame.K_5: "transform",
+			pygame.K_6: "rubber"
 		}
 		self.figure_dct = {
 			"rect": pygame.draw.rect,
@@ -42,8 +43,8 @@ class PaintCode:
 	def loop(self):
 		while True:
 			self.draw_object()
-			self.draw_cursor()
 			self.handlers()
+			self.draw_cursor()
 			pygame.display.flip()
 			pygame.time.Clock().tick()
 
@@ -56,6 +57,11 @@ class PaintCode:
 			if event.type == pygame.KEYDOWN:
 				if event.key in self.cursors_dct.keys():
 					self.cursor = self.cursors_dct[event.key]
+					self.drag = False
+					self.clicked = False
+					self.clicked_control = False
+					self.drag_stop = (0, 0)
+					print(self.cursor)
 
 			if event.type == pygame.MOUSEBUTTONDOWN:
 				if event.button == 1:
@@ -90,12 +96,16 @@ class PaintCode:
 				self.delete_object()
 
 	def draw_cursor(self):
+		x, y = get_pos()
 		if self.cursor in ("rect", "ellipse"):
-			pygame.draw.rect(self.screen, colors.RED, (get_pos()[0] + 10, get_pos()[1] + 25, 30, 30),
+			pygame.draw.rect(self.screen, colors.RED, (x+10, y+25, 30, 30),
 			                 width=2, border_radius=100 * (self.cursor == "ellipse"))
 		if self.cursor == "line":
-			pygame.draw.line(self.screen, colors.RED, [get_pos()[0] - 10, get_pos()[1] + 25],
-			                 [get_pos()[0] + 10, get_pos()[1] + 35], width=3)
+			pygame.draw.line(self.screen, colors.RED, [x-10, y+25],
+			                 [x+10, y+35], width=3)
+		if self.cursor == "polygon":
+			pygame.draw.polygon(self.screen, colors.RED,
+			                    [[x, y+20], [x-10, y+30], [x+10, y+30]], width=2)
 
 	def draw_figure_obj(self):
 		x1, y1 = self.dragging_coordinates
